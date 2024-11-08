@@ -869,14 +869,25 @@ uint8_t Rssi2Y(uint16_t rssi)
 
 static void DrawSpectrum()
 {
-    uint8_t ox = 0;
+    uint16_t rssi, x, xx, ox = 0;
+
     for (uint8_t i = 0; i < 128; ++i)
     {
-        uint16_t rssi = rssiHistory[i >> settings.stepsCount];
+        rssi = rssiHistory[i >> settings.stepsCount];
         if (rssi != RSSI_MAX_VALUE)
-        {
-            uint8_t x = i * 128 / GetStepsCount();
-            for (uint8_t xx = ox; xx < x; xx++)
+        {   //
+            //RAF: interger division principles
+            //     1. using the largest word to process the result
+            //     2. pay attention to overflow and underflow
+            //     3. round up a/b division with (a + (b>>1))/b
+            //     4. store fx() or variable values, before
+            //     5. use 2^n powers with <</>> as much as possible
+            //
+            // uint8_t x = i * 128 / GetStepsCount();
+            x = (uint16_t)i << 7;       // #1 + #4 + #5
+            xx = GetStepsCount();       // #4
+            x = (x + (xx >> 1)) / xx;   // #3
+            for (xx = ox; xx < x; xx++)
             {
                 DrawVLine(Rssi2Y(rssi), DrawingEndY, xx, true);
             }
